@@ -124,10 +124,17 @@ const UI = {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-    UI.initUserPanel();
-
-    Auth.setUser({ username: 'Player1', gold: 1250 });
-    UI.initUserPanel();
+    if (Auth.getToken()) {
+        try {
+            const me = await Api.get('/me');
+            Auth.setUser(me);
+            UI.initUserPanel();
+        } catch (err) {
+            console.error("profile err", err);
+        }
+    } else {
+        Toast.info('Non auth');
+    }
 
     const container = document.getElementById('cats-container');
     if (!container) return;
@@ -136,22 +143,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         container.innerHTML = `
             <div class="empty-state" style="grid-column: 1 / -1;">
                 <div class="spinner"></div>
-                <h3 class="empty-state-title">Ищем котиков...</h3>
+                <h3 class="empty-state-title">Searching for cats...</h3>
             </div>
         `;
-
-        const cats = [
-            { id: 1, name: 'Fluffy', rarity: 'COMMON', gpm: 10, type: 'Fluffy', image_url: 'https://png.pngtree.com/png-clipart/20250807/original/pngtree-cute-chibi-cat-illustration-pastel-colors-minimalist-flat-design-png-image_21644944.png', is_on_market: false },
-            { id: 2, name: 'Shadow', rarity: 'RARE', gpm: 50, type: 'Sphynx', image_url: 'https://png.pngtree.com/png-clipart/20250807/original/pngtree-cute-chibi-cat-illustration-pastel-colors-minimalist-flat-design-png-image_21644944.png', is_on_market: true },
-            { id: 3, name: 'Higl', rarity: 'LEGENDARY', gpm: 250, type: 'Siamese', image_url: 'https://png.pngtree.com/png-clipart/20250807/original/pngtree-cute-chibi-cat-illustration-pastel-colors-minimalist-flat-design-png-image_21644944.png', is_on_market: false }
-        ];
+        const response = await Api.get('/cats');
+        const cats = response.cats;
 
         container.innerHTML = '';
 
         if (!cats || cats.length === 0) {
             container.innerHTML = `
                 <div class="empty-state" style="grid-column: 1 / -1;">
-                    <h3 class="empty-state-title">You dont have any cats!</h3>
+                    <h3 class="empty-state-title">No cats!</h3>
                 </div>
             `;
             return;
@@ -165,7 +168,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         container.innerHTML = `
             <div class="empty-state" style="grid-column: 1 / -1;">
                 <div class="empty-state-icon" style="color: var(--color-error);">⚠️</div>
-                <h3 class="empty-state-title">Cannot load data from server</h3>
+                <h3 class="empty-state-title">Server err</h3>
             </div>
         `;
         Toast.error('Server error: ' + error.message || 'Unknown error');

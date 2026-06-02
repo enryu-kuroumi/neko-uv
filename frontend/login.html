@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NekoUV | Auth</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body { justify-content: center; align-items: center; }
+        .auth-card { width: 100%; max-width: 400px; padding: 2rem; }
+        .auth-title { text-align: center; margin-bottom: 1.5rem; font-family: 'Quicksand', sans-serif; font-size: 1.5rem; font-weight: 800; }
+        .toggle-link { text-align: center; margin-top: 1rem; font-size: 0.85rem; cursor: pointer; color: var(--color-primary); font-weight: 700; }
+        .toggle-link:hover { color: var(--color-primary-dark); }
+    </style>
+</head>
+<body>
+<div class="card auth-card">
+    <h2 class="auth-title" id="form-title">Sign in to NekoUV</h2>
+
+    <form id="auth-form" class="form-group">
+        <label class="form-label">Username <span class="required">*</span></label>
+        <input type="text" id="username" class="form-input" required minlength="3">
+
+        <label class="form-label" style="margin-top: 0.5rem;">Password <span class="required">*</span></label>
+        <input type="password" id="password" class="form-input" required minlength="6">
+
+        <div id="recovery-group" style="display: none; margin-top: 0.5rem;">
+            <label class="form-label">Recovery Email</label>
+            <input type="email" id="email" class="form-input" placeholder="For account recovery">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" style="margin-top: 1.5rem;" id="submit-btn">Login</button>
+    </form>
+
+    <div class="toggle-link" id="toggle-mode">Don't have an account? Register</div>
+</div>
+
+<script src="script.js"></script>
+<script>
+    let isLogin = true;
+
+    document.getElementById('toggle-mode').addEventListener('click', () => {
+        isLogin = !isLogin;
+        document.getElementById('form-title').textContent = isLogin ? 'Sign in to NekoUV' : 'Registration';
+        document.getElementById('submit-btn').textContent = isLogin ? 'Login' : 'Create account';
+        document.getElementById('toggle-mode').textContent = isLogin ? "Don't have an account? Register" : "Already have an account? Login";
+        document.getElementById('recovery-group').style.display = isLogin ? 'none' : 'block';
+    });
+
+    document.getElementById('auth-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('username')?.value || '';
+        const password = document.getElementById('password')?.value || '';
+        const email = document.getElementById('email')?.value || '';
+
+        const endpoint = isLogin ? '/login' : '/register';
+        const payload = { username, password };
+        if (!isLogin && email) payload.recovery_email = email;
+
+        try {
+            const res = await Api.post(endpoint, payload);
+            Auth.setToken(res.token);
+            Auth.setUser(res.user);
+            window.location.href = '/';
+        } catch (err) {
+            alert('Error: ' + err.message);
+        }
+    });
+</script>
+</body>
+</html>
