@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	mrand "math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -55,9 +56,16 @@ type Cat struct {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  GLOBALS
+//
+//	GLOBALS
+//
 // ══════════════════════════════════════════════════════════════════════════════
-
+var catImages = []string{
+	"https://png.pngtree.com/png-clipart/20250807/original/pngtree-cute-chibi-cat-illustration-pastel-colors-minimalist-flat-design-png-image_21644944.png",
+	"https://i.ibb.co/FLMTJNzb/fire.png",
+	"https://i.ibb.co/fYnYqBKx/ice.png",
+	"https://i.ibb.co/hRm8Q2gJ/gold.png",
+}
 var (
 	db        *gorm.DB
 	jwtSecret []byte
@@ -342,6 +350,32 @@ func catsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"cats": cats})
 }
 
+func createCatHandler(c *gin.Context) {
+	uid, _ := c.Get("userID")
+	cat := generateRandomCat(uid.(uint))
+	db.Create(&cat)
+	c.JSON(http.StatusCreated, cat)
+}
+
+func updateCatHandler(c *gin.Context) {
+	uid, _ := c.Get("userID")
+	id := c.Param("id")
+	var input struct {
+		Name string `json:"name"`
+	}
+	c.ShouldBindJSON(&input)
+
+	db.Model(&Cat{}).Where("id = ? AND user_id = ?", id, uid).Update("name", input.Name)
+	c.JSON(http.StatusOK, gin.H{"message": "updated"})
+}
+
+func deleteCatHandler(c *gin.Context) {
+	uid, _ := c.Get("userID")
+	id := c.Param("id")
+	db.Where("id = ? AND user_id = ?", id, uid).Delete(&Cat{})
+	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 //  HANDLERS — ADMIN (backup / restore)
 // ══════════════════════════════════════════════════════════════════════════════
@@ -439,6 +473,24 @@ func isDuplicateKey(err error) bool {
 		strings.Contains(msg, "23505") // PostgreSQL error code for unique_violation
 }
 
+func generateRandomCat(userID uint) Cat {
+	rarities := []string{"COMMON", "UNCOMMON", "RARE", "LEGENDARY"}
+	rarity := rarities[mrand.Intn(len(rarities))]
+	gpm := 10 + mrand.Intn(50)
+	if rarity == "LEGENDARY" {
+		gpm += 200
+	}
+	imageURL := catImages[mrand.Intn(len(catImages))]
+	return Cat{
+		UserID:   userID,
+		Name:     "Kitty #" + time.Now().Format("05"),
+		Rarity:   rarity,
+		GPM:      gpm,
+		Type:     "Domestic",
+		ImageURL: imageURL,
+	}
+}
+
 // seedStarterCats inserts three starter cats for a brand-new user so the
 // frontend renders content immediately after the first login.
 func seedStarterCats(userID uint) {
@@ -481,10 +533,10 @@ func main() {
 	// --- Router ---
 	r := gin.Default()
 	r.Static("/static", "./frontend")
-    r.StaticFile("/", "./frontend/index.html")
-    r.StaticFile("/login.html", "./frontend/login.html")
-    r.StaticFile("/styles.css", "./frontend/styles.css")
-    r.StaticFile("/script.js", "./frontend/script.js")
+	r.StaticFile("/", "./frontend/index.html")
+	r.StaticFile("/login.html", "./frontend/login.html")
+	r.StaticFile("/styles.css", "./frontend/styles.css")
+	r.StaticFile("/script.js", "./frontend/script.js")
 
 	// CORS — tighten AllowOrigins to your domain before going to production
 	r.Use(func(c *gin.Context) {
@@ -514,6 +566,8 @@ func main() {
 		{
 			protected.GET("/me", meHandler)
 			protected.GET("/cats", catsHandler)
+			protected.POST("/cats", createCatHandler)
+			protected.DELETE("/cats/:id", deleteCatHandler)
 		}
 
 		// ── Admin ── TODO: add role check before shipping to production ──────
