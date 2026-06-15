@@ -31,7 +31,7 @@ const Api = {
 
             if (!response.ok) {
                 if (response.status === 401) Auth.logout();
-                throw new Error(data.message || 'Ошибка сервера');
+                throw new Error(data.message || 'Server error');
             }
             return data;
         } catch (error) {
@@ -43,7 +43,6 @@ const Api = {
     post: (endpoint, body) => Api.request(endpoint, { method: 'POST', body: JSON.stringify(body) })
 };
 
-
 const Toast = {
     show(message, type = 'info') {
         let container = document.querySelector('.toast-container');
@@ -54,7 +53,6 @@ const Toast = {
         }
 
         const toast = document.createElement('div');
-
         toast.className = `toast ${type}`;
         toast.textContent = message;
 
@@ -88,14 +86,10 @@ const UI = {
 
     createCatCard(cat) {
         const card = document.createElement('article');
-
         card.className = `cat-card`;
 
         const rarityClass = (cat.rarity || 'COMMON').toLowerCase();
-
-        const saleTagHTML = cat.is_on_market
-            ? `<span class="sale-tag on-sale">On market</span>`
-            : '';
+        const saleTagHTML = cat.is_on_market ? `<span class="sale-tag on-sale">On market</span>` : '';
 
         card.innerHTML = `
             <div class="cat-avatar rarity-${rarityClass}">
@@ -110,13 +104,17 @@ const UI = {
                     <span class="cat-stat-value gold">${cat.gpm} 🪙</span>
                 </div>
                 <div class="cat-stat">
-                    <span class="cat-stat-label">Тип</span>
+                    <span class="cat-stat-label">Type</span>
                     <span class="cat-stat-value">${UI.escapeHtml(cat.type)}</span>
                 </div>
             </div>
             
-            <div class="cat-actions" style="justify-content: center;">
+            <div class="cat-actions" style="justify-content: center; flex-direction: column; gap: 5px;">
                 ${saleTagHTML}
+                <div style="display: flex; gap: 5px;">
+                    <button onclick="updateCat(${cat.id})" class="btn btn-sm btn-primary">Edit</button>
+                    <button onclick="deleteCat(${cat.id})" class="btn btn-sm btn-danger">Del</button>
+                </div>
             </div>
         `;
         return card;
@@ -171,6 +169,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <h3 class="empty-state-title">Server err</h3>
             </div>
         `;
-        Toast.error('Server error: ' + error.message || 'Unknown error');
+        Toast.error('Server error: ' + (error.message || 'Unknown error'));
     }
 });
+
+async function spawnCat() {
+    await Api.post('/cats/spawn', {});
+    location.reload();
+}
+
+async function deleteCat(id) {
+    if (!confirm("Are you sure?")) return;
+    await Api.request(`/cats/${id}`, { method: 'DELETE' });
+    location.reload();
+}
+
+async function updateCat(id) {
+    const newName = prompt("Enter new name:");
+    if (!newName) return;
+    await Api.request(`/cats/${id}`, { 
+        method: 'PUT', 
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name: newName }) 
+    });
+    location.reload();
+}
