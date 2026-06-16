@@ -566,8 +566,9 @@ func main() {
 		{
 			protected.GET("/me", meHandler)
 			protected.GET("/cats", catsHandler)
-			protected.POST("/cats", createCatHandler)
+			protected.POST("/cats/spawn", createCatHandler)
 			protected.DELETE("/cats/:id", deleteCatHandler)
+			protected.PUT("/cats/:id", updateCatHandler)
 		}
 
 		// ── Admin ── TODO: add role check before shipping to production ──────
