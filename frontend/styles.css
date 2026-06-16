@@ -634,7 +634,7 @@ a:hover { color: var(--color-primary-dark); }
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(61,64,80,0.5); /* Обновлено под серо-синий текст */
+    background: rgba(61,64,80,0.5); 
     backdrop-filter: blur(4px);
     z-index: 1000;
     display: flex;
@@ -832,7 +832,7 @@ a:hover { color: var(--color-primary-dark); }
 }
 .page-btn.active { background: var(--color-primary); color: white; border-color: var(--color-primary); }
 
-/* ─── Alerts / Banners (Обновлены под пастель) ───── */
+/* ─── Alerts / Banners ───── */
 .alert {
     border-radius: var(--card-radius);
     padding: 0.875rem 1.125rem;
